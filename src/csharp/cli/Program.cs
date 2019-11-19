@@ -1,19 +1,33 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace cli
 {
+    internal interface IProjection
+    {
+        void Projection(Event @event);
+
+        string Result { get; }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            var projector = new CountEvents();
-            var registrationsProjector = new CountRegisteredUsers();
+            var projections = new List<IProjection>()
+            {
+                new CountEvents(),
+                new CountRegisteredUsers()
+            };
 
-            new EventStore(e => projector.Projection(e), e => registrationsProjector.Projection(e))
+            new EventStore(projections.Select<IProjection, Action<Event>>(p => p.Projection))
                 .Replay(FilePathFrom(args));
 
-            Console.WriteLine("number of events: {0}", projector.Result);
-            Console.WriteLine("number of registered users: {0}", registrationsProjector.Result);
+            foreach (var projection in projections)
+            {
+                Console.WriteLine(projection.Result);
+            }
         }
 
         private static string FilePathFrom(string[] args)
@@ -23,26 +37,30 @@ namespace cli
         }
     }
 
-    internal class CountEvents
+    internal class CountEvents : IProjection
     {
-        public int Result { get; private set; }
+        private int _result;
 
         public void Projection(Event @event)
         {
-            Result++;
+            _result++;
         }
+
+        public string Result => $"number of events: {_result}";
     }
 
-    internal class CountRegisteredUsers
+    internal class CountRegisteredUsers : IProjection
     {
-        public int Result { get; private set; }
+        private int _result;
 
         public void Projection(Event @event)
         {
-            if (@event.Type.Equals("PlayerHasRegistered", StringComparison.InvariantCulture))
+            if (@event.Type.Equals("PlayerHasRegistered", StringComparison.InvariantCultureIgnoreCase))
             {
-                Result++;
+                _result++;
             }
         }
+
+        public string Result => $"number of registered users: {_result}";
     }
 }

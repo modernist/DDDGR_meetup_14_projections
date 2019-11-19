@@ -1,14 +1,15 @@
-using System;
-using System.IO;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace cli
 {
     internal class EventStore
     {
-        private readonly Action<Event>[] projections;
+        private readonly IEnumerable<Action<Event>> projections;
 
-        public EventStore(params Action<Event>[] projections)
+        public EventStore(IEnumerable<Action<Event>> projections)
         {
             this.projections = projections;
         }

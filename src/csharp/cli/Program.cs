@@ -7,10 +7,13 @@ namespace cli
         static void Main(string[] args)
         {
             var projector = new CountEvents();
-            new EventStore(e => projector.Projection(e))
+            var registrationsProjector = new CountRegisteredUsers();
+
+            new EventStore(e => projector.Projection(e), e => registrationsProjector.Projection(e))
                 .Replay(FilePathFrom(args));
 
             Console.WriteLine("number of events: {0}", projector.Result);
+            Console.WriteLine("number of registered users: {0}", registrationsProjector.Result);
         }
 
         private static string FilePathFrom(string[] args)
@@ -27,6 +30,19 @@ namespace cli
         public void Projection(Event @event)
         {
             Result++;
+        }
+    }
+
+    internal class CountRegisteredUsers
+    {
+        public int Result { get; private set; }
+
+        public void Projection(Event @event)
+        {
+            if (@event.Type.Equals("PlayerHasRegistered", StringComparison.InvariantCulture))
+            {
+                Result++;
+            }
         }
     }
 }

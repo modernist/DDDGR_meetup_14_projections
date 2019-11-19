@@ -1,0 +1,7 @@
+{
+  "name": "javascript",
+  "version": "1.0.0",
+  "dependencies": {
+    "stream-json": "latest"
+  }
+}

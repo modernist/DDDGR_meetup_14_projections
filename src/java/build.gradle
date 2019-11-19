@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+group 'org.playing-with-projections'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.9'
+    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.9'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task execute(type: JavaExec) {
+    main = 'playingWithProjections.Main'
+    classpath = sourceSets.main.runtimeClasspath
+}

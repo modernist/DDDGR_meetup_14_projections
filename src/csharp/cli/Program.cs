@@ -18,7 +18,8 @@ namespace cli
             var projections = new List<IProjection>()
             {
                 new CountEvents(),
-                new CountRegisteredUsers()
+                new CountRegisteredUsers(),
+                new CountRegisteredUsersPerMonth()
             };
 
             new EventStore(projections.Select<IProjection, Action<Event>>(p => p.Projection))
@@ -62,5 +63,31 @@ namespace cli
         }
 
         public string Result => $"number of registered users: {_result}";
+    }
+
+    internal class CountRegisteredUsersPerMonth : IProjection
+    {
+        private Dictionary<string, int> _result = new Dictionary<string, int>(); // month -> count
+
+        public void Projection(Event @event)
+        {
+            if (!@event.Type.Equals("PlayerHasRegistered", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return;
+            }
+
+            var month = @event.Timestamp.ToString("yyyy-MM");
+            if (_result.TryGetValue(month, out var currentValue))
+            {
+                _result[month] = currentValue + 1;
+            }
+            else
+            {
+                _result.Add(month, 1);
+            }
+        }
+
+        public string Result => string.Join(Environment.NewLine,
+            _result.Select(kvp => $"{kvp.Key} : {kvp.Value}").OrderBy(t => t));
     }
 }

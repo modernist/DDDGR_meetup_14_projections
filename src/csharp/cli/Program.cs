@@ -19,7 +19,8 @@ namespace cli
             {
                 new CountEvents(),
                 new CountRegisteredUsers(),
-                new CountRegisteredUsersPerMonth()
+                new CountRegisteredUsersPerMonth(),
+                new PopularQuizzes()
             };
 
             new EventStore(projections.Select<IProjection, Action<Event>>(p => p.Projection))
@@ -28,6 +29,7 @@ namespace cli
             foreach (var projection in projections)
             {
                 Console.WriteLine(projection.Result);
+                Console.WriteLine();
             }
         }
 
@@ -89,5 +91,38 @@ namespace cli
 
         public string Result => string.Join(Environment.NewLine,
             _result.Select(kvp => $"{kvp.Key} : {kvp.Value}").OrderBy(t => t));
+    }
+
+    internal class PopularQuizzes : IProjection
+    {
+        private Dictionary<string, string> _quizTitles = new Dictionary<string, string>(); // quiz id => quiz title
+        private Dictionary<string, string> _gameQuizzes = new Dictionary<string, string>(); //game id => quiz id
+        private Dictionary<string, int> _quizCount = new Dictionary<string, int>(); // quiz id => game count
+
+        public void Projection(Event @event)
+        {
+            switch (@event.Type)
+            {
+                case "QuizWasCreated":
+                    _quizTitles.Add(@event.Payload["quiz_id"], @event.Payload["quiz_title"]);
+                    _quizCount.Add(@event.Payload["quiz_id"], 0);
+                    break;
+
+                case "GameWasOpened":
+                    _gameQuizzes.Add(@event.Payload["game_id"], @event.Payload["quiz_id"]);
+                    break;
+
+                case "GameWasStarted":
+                    var quiz_id = _gameQuizzes[@event.Payload["game_id"]];
+                    if (_quizCount.TryGetValue(quiz_id, out var count))
+                    {
+                        _quizCount[quiz_id] = count + 1;
+                    }
+                    break;
+            }
+        }
+
+        public string Result => string.Join(Environment.NewLine,
+            _quizCount.OrderByDescending(q => q.Value).Take(10).Select(qp => $"{_quizTitles[qp.Key]} ({qp.Key}): {qp.Value}"));
     }
 }
